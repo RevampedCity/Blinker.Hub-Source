@@ -1,246 +1,45 @@
--- Insane GUI Library Base for Roblox
--- Supports Tabs, Sections, and controls (Toggle, Slider, Button, Dropdown, Textbox)
+-- SexyGUI Library
+-- Usage: local gui = SexyGUI:CreateWindow("Title")
 
-local RunService = game:GetService("RunService")
+local SexyGUI = {}
+SexyGUI.__index = SexyGUI
+
+-- Styles
+local COLORS = {
+    background = Color3.fromRGB(20, 20, 25),
+    accent = Color3.fromRGB(0, 180, 255),
+    text = Color3.fromRGB(230, 230, 230),
+    button = Color3.fromRGB(30, 30, 40),
+    buttonHover = Color3.fromRGB(0, 140, 220),
+    toggleOff = Color3.fromRGB(100, 100, 110),
+    toggleOn = Color3.fromRGB(0, 180, 255),
+}
+
+-- Services
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
-local Library = {}
-
--- Theme/colors (customize!)
-Library.Theme = {
-    Background = Color3.fromRGB(30, 30, 35),
-    Accent = Color3.fromRGB(85, 170, 255),
-    TextColor = Color3.fromRGB(230, 230, 230),
-    SectionBackground = Color3.fromRGB(40, 40, 45),
-    ToggleOn = Color3.fromRGB(85, 170, 255),
-    ToggleOff = Color3.fromRGB(80, 80, 80),
-    Hover = Color3.fromRGB(100, 100, 110),
-}
-
--- Create main GUI elements
-function Library:CreateWindow(title)
-    local window = Instance.new("ScreenGui")
-    window.Name = title or "InsaneGUI"
-    window.ResetOnSpawn = false
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 500, 0, 400)
-    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
-    mainFrame.BackgroundColor3 = self.Theme.Background
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = window
-    mainFrame.ClipsDescendants = true
-    mainFrame.Name = "MainFrame"
-
-    -- Make draggable
-    self:MakeDraggable(mainFrame)
-
-    -- Title bar
-    local titleBar = Instance.new("Frame")
-    titleBar.Size = UDim2.new(1, 0, 0, 30)
-    titleBar.BackgroundColor3 = self.Theme.SectionBackground
-    titleBar.Parent = mainFrame
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Text = title or "Insane GUI"
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 18
-    titleLabel.TextColor3 = self.Theme.TextColor
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Position = UDim2.new(0, 10, 0, 0)
-    titleLabel.Size = UDim2.new(1, -40, 1, 0)
-    titleLabel.Parent = titleBar
-
-    -- Close button
-    local closeButton = Instance.new("TextButton")
-    closeButton.Text = "X"
-    closeButton.Font = Enum.Font.GothamBold
-    closeButton.TextSize = 18
-    closeButton.TextColor3 = self.Theme.TextColor
-    closeButton.BackgroundColor3 = Color3.new(0,0,0)
-    closeButton.BackgroundTransparency = 0.8
-    closeButton.Position = UDim2.new(1, -30, 0, 0)
-    closeButton.Size = UDim2.new(0, 30, 1, 0)
-    closeButton.Parent = titleBar
-
-    closeButton.MouseEnter:Connect(function()
-        closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    end)
-    closeButton.MouseLeave:Connect(function()
-        closeButton.BackgroundColor3 = Color3.new(0,0,0)
-    end)
-    closeButton.MouseButton1Click:Connect(function()
-        window:Destroy()
-    end)
-
-    -- Tabs container
-    local tabsFrame = Instance.new("Frame")
-    tabsFrame.Size = UDim2.new(1, 0, 0, 30)
-    tabsFrame.Position = UDim2.new(0, 0, 0, 30)
-    tabsFrame.BackgroundColor3 = self.Theme.SectionBackground
-    tabsFrame.Parent = mainFrame
-    tabsFrame.Name = "TabsFrame"
-
-    -- Content container (where tab content goes)
-    local contentFrame = Instance.new("Frame")
-    contentFrame.Size = UDim2.new(1, 0, 1, -60)
-    contentFrame.Position = UDim2.new(0, 0, 0, 60)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.Parent = mainFrame
-    contentFrame.Name = "ContentFrame"
-
-    window.Parent = game:GetService("CoreGui")
-
-    local tabs = {}
-    local currentTab = nil
-
-    -- Tab creation function
-    function window:AddTab(tabName)
-        local tabButton = Instance.new("TextButton")
-        tabButton.Text = tabName
-        tabButton.Font = Enum.Font.Gotham
-        tabButton.TextSize = 16
-        tabButton.BackgroundColor3 = self.Theme.SectionBackground
-        tabButton.TextColor3 = self.Theme.TextColor
-        tabButton.Size = UDim2.new(0, 100, 1, 0)
-        tabButton.Parent = tabsFrame
-
-        -- Position buttons side by side
-        tabButton.Position = UDim2.new(0, (#tabs)*100, 0, 0)
-
-        -- Content frame for tab
-        local tabContent = Instance.new("ScrollingFrame")
-        tabContent.Size = UDim2.new(1, 0, 1, 0)
-        tabContent.Position = UDim2.new(0, 0, 0, 0)
-        tabContent.BackgroundTransparency = 1
-        tabContent.CanvasSize = UDim2.new(0, 0, 5, 0) -- big canvas for scrolling
-        tabContent.ScrollBarThickness = 5
-        tabContent.Parent = contentFrame
-        tabContent.Visible = false
-
-        tabs[tabName] = {
-            Button = tabButton,
-            Content = tabContent,
-            Sections = {},
-        }
-
-        -- On tab click, show content and update button colors
-        tabButton.MouseButton1Click:Connect(function()
-            if currentTab then
-                tabs[currentTab].Content.Visible = false
-                tabs[currentTab].Button.BackgroundColor3 = self.Theme.SectionBackground
-            end
-            currentTab = tabName
-            tabs[tabName].Content.Visible = true
-            tabs[tabName].Button.BackgroundColor3 = self.Theme.Accent
-        end)
-
-        -- If first tab, auto select
-        if not currentTab then
-            currentTab = tabName
-            tabContent.Visible = true
-            tabButton.BackgroundColor3 = self.Theme.Accent
-        end
-
-        -- Section creation within tab
-        function tabs[tabName]:AddSection(sectionName)
-            local sectionFrame = Instance.new("Frame")
-            sectionFrame.Size = UDim2.new(1, -20, 0, 150)
-            sectionFrame.Position = UDim2.new(0, 10, 0, #self.Sections * 160)
-            sectionFrame.BackgroundColor3 = Library.Theme.SectionBackground
-            sectionFrame.Parent = tabContent
-            sectionFrame.Name = "Section_" .. sectionName
-
-            local sectionTitle = Instance.new("TextLabel")
-            sectionTitle.Text = sectionName
-            sectionTitle.Font = Enum.Font.GothamBold
-            sectionTitle.TextSize = 16
-            sectionTitle.TextColor3 = Library.Theme.TextColor
-            sectionTitle.BackgroundTransparency = 1
-            sectionTitle.Size = UDim2.new(1, 0, 0, 25)
-            sectionTitle.Parent = sectionFrame
-
-            local section = {
-                Frame = sectionFrame,
-                Items = {},
-                LayoutOrder = #self.Sections + 1,
-                NextItemY = 30,
-            }
-
-            function section:AddToggle(name, default, callback)
-                local toggleFrame = Instance.new("Frame")
-                toggleFrame.Size = UDim2.new(1, 0, 0, 30)
-                toggleFrame.Position = UDim2.new(0, 0, 0, section.NextItemY)
-                toggleFrame.BackgroundTransparency = 1
-                toggleFrame.Parent = sectionFrame
-
-                local toggleLabel = Instance.new("TextLabel")
-                toggleLabel.Text = name
-                toggleLabel.Font = Enum.Font.Gotham
-                toggleLabel.TextSize = 14
-                toggleLabel.TextColor3 = Library.Theme.TextColor
-                toggleLabel.BackgroundTransparency = 1
-                toggleLabel.Position = UDim2.new(0, 5, 0, 0)
-                toggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
-                toggleLabel.Parent = toggleFrame
-
-                local toggleButton = Instance.new("TextButton")
-                toggleButton.Size = UDim2.new(0, 50, 0, 20)
-                toggleButton.Position = UDim2.new(1, -55, 0, 5)
-                toggleButton.Text = ""
-                toggleButton.BackgroundColor3 = default and Library.Theme.ToggleOn or Library.Theme.ToggleOff
-                toggleButton.Parent = toggleFrame
-                toggleButton.AutoButtonColor = false
-                toggleButton.Name = "ToggleButton"
-
-                local toggled = default
-
-                toggleButton.MouseButton1Click:Connect(function()
-                    toggled = not toggled
-                    toggleButton.BackgroundColor3 = toggled and Library.Theme.ToggleOn or Library.Theme.ToggleOff
-                    if callback then
-                        callback(toggled)
-                    end
-                end)
-
-                section.NextItemY = section.NextItemY + 35
-
-                return {
-                    Set = function(state)
-                        toggled = state
-                        toggleButton.BackgroundColor3 = toggled and Library.Theme.ToggleOn or Library.Theme.ToggleOff
-                        if callback then
-                            callback(toggled)
-                        end
-                    end,
-                    Get = function() return toggled end
-                }
-            end
-
-            -- More UI elements like Slider, Button, Dropdown, Textbox can be added here similarly
-
-            table.insert(self.Sections, section)
-            return section
-        end
-
-        return tabs[tabName]
-    end
-
-    return window
+-- Utility for tweening UI properties
+local function tween(obj, props, time, style, dir)
+    style = style or Enum.EasingStyle.Quad
+    dir = dir or Enum.EasingDirection.Out
+    local tweenInfo = TweenInfo.new(time, style, dir)
+    local tween = TweenService:Create(obj, tweenInfo, props)
+    tween:Play()
+    return tween
 end
 
--- Helper: Make frame draggable
-function Library:MakeDraggable(frame)
+-- Draggable support
+local function makeDraggable(frame, dragBar)
     local dragging, dragInput, dragStart, startPos
 
     local function update(input)
         local delta = input.Position - dragStart
         frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-                                   startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                                  startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 
-    frame.InputBegan:Connect(function(input)
+    dragBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
@@ -254,7 +53,7 @@ function Library:MakeDraggable(frame)
         end
     end)
 
-    frame.InputChanged:Connect(function(input)
+    dragBar.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
@@ -267,4 +66,377 @@ function Library:MakeDraggable(frame)
     end)
 end
 
-return Library
+-- Creates a button with hover effect
+local function createButton(text)
+    local btn = Instance.new("TextButton")
+    btn.BackgroundColor3 = COLORS.button
+    btn.TextColor3 = COLORS.text
+    btn.Text = text
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 16
+    btn.AutoButtonColor = false
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.BackgroundTransparency = 0.1
+    btn.ClipsDescendants = true
+    btn.RichText = true
+
+    btn.MouseEnter:Connect(function()
+        tween(btn, {BackgroundColor3 = COLORS.buttonHover}, 0.3)
+    end)
+    btn.MouseLeave:Connect(function()
+        tween(btn, {BackgroundColor3 = COLORS.button}, 0.3)
+    end)
+
+    return btn
+end
+
+-- Creates a toggle switch
+local function createToggle(text, default)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 30)
+    frame.BackgroundTransparency = 1
+
+    local label = Instance.new("TextLabel", frame)
+    label.Text = text
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.TextColor3 = COLORS.text
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 16
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local toggleBtn = Instance.new("Frame", frame)
+    toggleBtn.Size = UDim2.new(0, 40, 0, 20)
+    toggleBtn.Position = UDim2.new(1, -45, 0, 5)
+    toggleBtn.BackgroundColor3 = default and COLORS.toggleOn or COLORS.toggleOff
+    toggleBtn.AnchorPoint = Vector2.new(1, 0)
+    toggleBtn.ClipsDescendants = true
+    toggleBtn.BackgroundTransparency = 0.1
+    toggleBtn.BorderSizePixel = 0
+    toggleBtn.Roundify = Instance.new("UICorner", toggleBtn)
+    toggleBtn.Roundify.CornerRadius = UDim.new(0, 10)
+
+    local circle = Instance.new("Frame", toggleBtn)
+    circle.Size = UDim2.new(0, 18, 0, 18)
+    circle.Position = default and UDim2.new(1, -18, 0, 1) or UDim2.new(0, 0, 0, 1)
+    circle.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    circle.Roundify = Instance.new("UICorner", circle)
+    circle.Roundify.CornerRadius = UDim.new(1, 0)
+    circle.BorderSizePixel = 0
+
+    local toggled = default or false
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            toggled = not toggled
+            tween(toggleBtn, {BackgroundColor3 = toggled and COLORS.toggleOn or COLORS.toggleOff}, 0.25)
+            tween(circle, {Position = toggled and UDim2.new(1, -18, 0, 1) or UDim2.new(0, 0, 0, 1)}, 0.25)
+            if frame.ToggleCallback then
+                frame.ToggleCallback(toggled)
+            end
+        end
+    end)
+
+    function frame:Set(t)
+        toggled = t
+        toggleBtn.BackgroundColor3 = toggled and COLORS.toggleOn or COLORS.toggleOff
+        circle.Position = toggled and UDim2.new(1, -18, 0, 1) or UDim2.new(0, 0, 0, 1)
+    end
+
+    function frame:Get()
+        return toggled
+    end
+
+    function frame:OnToggle(callback)
+        self.ToggleCallback = callback
+    end
+
+    return frame
+end
+
+-- Creates an input box
+local function createInput(placeholder)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 30)
+    frame.BackgroundTransparency = 1
+
+    local textbox = Instance.new("TextBox", frame)
+    textbox.Size = UDim2.new(1, 0, 1, 0)
+    textbox.BackgroundColor3 = COLORS.button
+    textbox.BackgroundTransparency = 0.1
+    textbox.TextColor3 = COLORS.text
+    textbox.TextSize = 16
+    textbox.Font = Enum.Font.Gotham
+    textbox.PlaceholderText = placeholder or ""
+    textbox.ClearTextOnFocus = false
+    textbox.TextXAlignment = Enum.TextXAlignment.Left
+    textbox.BorderSizePixel = 0
+    textbox.Roundify = Instance.new("UICorner", textbox)
+    textbox.Roundify.CornerRadius = UDim.new(0, 6)
+
+    function frame:Get()
+        return textbox.Text
+    end
+
+    function frame:Set(text)
+        textbox.Text = text
+    end
+
+    function frame:OnChanged(callback)
+        textbox.Changed:Connect(function()
+            callback(textbox.Text)
+        end)
+    end
+
+    return frame
+end
+
+-- Create a slider
+local function createSlider(text, min, max, default)
+    min = min or 0
+    max = max or 100
+    default = default or min
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 40)
+    frame.BackgroundTransparency = 1
+
+    local label = Instance.new("TextLabel", frame)
+    label.Text = text .. ": " .. tostring(default)
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.TextColor3 = COLORS.text
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 16
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local bar = Instance.new("Frame", frame)
+    bar.Size = UDim2.new(1, 0, 0, 12)
+    bar.Position = UDim2.new(0, 0, 1, -14)
+    bar.BackgroundColor3 = COLORS.button
+    bar.BackgroundTransparency = 0.1
+    bar.Roundify = Instance.new("UICorner", bar)
+    bar.Roundify.CornerRadius = UDim.new(0, 6)
+
+    local fill = Instance.new("Frame", bar)
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = COLORS.accent
+    fill.Roundify = Instance.new("UICorner", fill)
+    fill.Roundify.CornerRadius = UDim.new(0, 6)
+
+    local dragging = false
+
+    local function updateValue(x)
+        local relativeX = math.clamp(x - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
+        local value = (relativeX / bar.AbsoluteSize.X) * (max - min) + min
+        fill.Size = UDim2.new(relativeX / bar.AbsoluteSize.X, 0, 1, 0)
+        label.Text = text .. ": " .. string.format("%.2f", value)
+        if frame.SliderCallback then
+            frame.SliderCallback(value)
+        end
+    end
+
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateValue(input.Position.X)
+        end
+    end)
+
+    bar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateValue(input.Position.X)
+        end
+    end)
+
+    function frame:Set(value)
+        value = math.clamp(value, min, max)
+        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+        label.Text = text .. ": " .. string.format("%.2f", value)
+    end
+
+    function frame:Get()
+        local percent = fill.Size.X.Scale
+        return percent * (max - min) + min
+    end
+
+    function frame:OnChanged(callback)
+        self.SliderCallback = callback
+    end
+
+    return frame
+end
+
+-- Creates a section container inside a window
+local function createSection(title)
+    local section = Instance.new("Frame")
+    section.Size = UDim2.new(1, 0, 0, 0)
+    section.BackgroundTransparency = 1
+    section.ClipsDescendants = false
+    section.LayoutOrder = 0
+
+    local sectionLabel = Instance.new("TextLabel", section)
+    sectionLabel.Text = title
+    sectionLabel.Size = UDim2.new(1, 0, 0, 30)
+    sectionLabel.BackgroundTransparency = 1
+    sectionLabel.TextColor3 = COLORS.accent
+    sectionLabel.Font = Enum.Font.GothamBold
+    sectionLabel.TextSize = 18
+    sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local uiList = Instance.new("UIListLayout", section)
+    uiList.SortOrder = Enum.SortOrder.LayoutOrder
+    uiList.Padding = UDim.new(0, 6)
+
+    local padding = Instance.new("UIPadding", section)
+    padding.PaddingTop = UDim.new(0, 6)
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+
+    function section:AddButton(text, callback)
+        local btn = createButton(text)
+        btn.LayoutOrder = #section:GetChildren() + 1
+        btn.Parent = section
+        btn.MouseButton1Click:Connect(callback)
+        return btn
+    end
+
+    function section:AddToggle(text, default)
+        local toggle = createToggle(text, default)
+        toggle.LayoutOrder = #section:GetChildren() + 1
+        toggle.Parent = section
+        return toggle
+    end
+
+    function section:AddInput(placeholder)
+        local input = createInput(placeholder)
+        input.LayoutOrder = #section:GetChildren() + 1
+        input.Parent = section
+        return input
+    end
+
+    function section:AddSlider(text, min, max, default)
+        local slider = createSlider(text, min, max, default)
+        slider.LayoutOrder = #section:GetChildren() + 1
+        slider.Parent = section
+        return slider
+    end
+
+    return section
+end
+
+-- Main function to create a window
+function SexyGUI:CreateWindow(title)
+    local self = setmetatable({}, SexyGUI)
+
+    -- ScreenGui
+    self.gui = Instance.new("ScreenGui")
+    self.gui.Name = "SexyGUI_" .. title:gsub("%s+", "")
+    self.gui.ResetOnSpawn = false
+    self.gui.Parent = game:GetService("CoreGui")
+
+    -- Main window frame
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 400, 0, 500)
+    frame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    frame.BackgroundColor3 = COLORS.background
+    frame.BorderSizePixel = 0
+    frame.ClipsDescendants = true
+    frame.Parent = self.gui
+    self.frame = frame
+
+    -- Round corners
+    local round = Instance.new("UICorner", frame)
+    round.CornerRadius = UDim.new(0, 12)
+
+    -- Shadow effect
+    local shadow = Instance.new("ImageLabel", frame)
+    shadow.Size = UDim2.new(1, 16, 1, 16)
+    shadow.Position = UDim2.new(0, -8, 0, -8)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1316045217" -- subtle shadow image
+    shadow.ImageColor3 = Color3.new(0, 0, 0)
+    shadow.ImageTransparency = 0.7
+    shadow.ZIndex = 0
+
+    -- Title bar
+    local titleBar = Instance.new("Frame", frame)
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+
+    local titleLabel = Instance.new("TextLabel", titleBar)
+    titleLabel.Text = title
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 20
+    titleLabel.TextColor3 = COLORS.accent
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Size = UDim2.new(1, -50, 1, 0)
+    titleLabel.Position = UDim2.new(0, 10, 0, 0)
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Minimize button
+    local minBtn = Instance.new("TextButton", titleBar)
+    minBtn.Size = UDim2.new(0, 30, 0, 30)
+    minBtn.Position = UDim2.new(1, -40, 0, 5)
+    minBtn.Text = "–"
+    minBtn.Font = Enum.Font.GothamBold
+    minBtn.TextSize = 24
+    minBtn.TextColor3 = COLORS.accent
+    minBtn.BackgroundTransparency = 1
+    minBtn.AutoButtonColor = false
+
+    minBtn.MouseEnter:Connect(function()
+        tween(minBtn, {TextColor3 = Color3.fromRGB(0, 255, 255)}, 0.2)
+    end)
+    minBtn.MouseLeave:Connect(function()
+        tween(minBtn, {TextColor3 = COLORS.accent}, 0.2)
+    end)
+
+    local content = Instance.new("Frame", frame)
+    content.Position = UDim2.new(0, 0, 0, 40)
+    content.Size = UDim2.new(1, 0, 1, -40)
+    content.BackgroundTransparency = 1
+    self.content = content
+
+    local layout = Instance.new("UIListLayout", content)
+    layout.Padding = UDim.new(0, 10)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    -- Minimize toggle
+    local minimized = false
+    minBtn.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        if minimized then
+            tween(content, {Size = UDim2.new(1, 0, 0, 0)}, 0.3)
+            tween(frame, {Size = UDim2.new(0, 400, 0, 40)}, 0.3)
+        else
+            tween(content, {Size = UDim2.new(1, 0, 1, -40)}, 0.3)
+            tween(frame, {Size = UDim2.new(0, 400, 0, 500)}, 0.3)
+        end
+    end)
+
+    -- Drag support on title bar
+    makeDraggable(frame, titleBar)
+
+    -- Sections container
+    self.sections = {}
+
+    -- API to add sections
+    function self:AddSection(name)
+        local section = createSection(name)
+        section.Parent = content
+        section.LayoutOrder = #self.sections + 1
+        table.insert(self.sections, section)
+        return section
+    end
+
+    return self
+end
+
+return SexyGUI
