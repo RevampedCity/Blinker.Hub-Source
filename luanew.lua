@@ -1,114 +1,130 @@
--- init.lua
-local GUI_Library = {}
+-- INSANE EXOTIC GUI LIBRARY (INSANEGUI)
+local InsaneGUI = {}
 
-function GUI_Library.CreateGUI(parent)
-    local GUITOLUA = Instance.new("ScreenGui")
-    GUITOLUA.Name = "GUI_TO_LUA"
-    GUITOLUA.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    GUITOLUA.Parent = parent or game.Players.LocalPlayer:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
-    local VeryBackFrameTabListTabs = Instance.new("Frame")
-    VeryBackFrameTabListTabs.Name = "VeryBackFrameTabListTabs"
-    VeryBackFrameTabListTabs.Parent = GUITOLUA
-    VeryBackFrameTabListTabs.BackgroundColor3 = Color3.fromRGB(93, 93, 93)
-    VeryBackFrameTabListTabs.Position = UDim2.new(0.0936, 0, 0.306, 0)
-    VeryBackFrameTabListTabs.Size = UDim2.new(0, 145, 0, 134)
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "InsaneExoticGUI"
+Gui.ResetOnSpawn = false
+Gui.Parent = game:GetService("CoreGui")
 
-    local SelectedTabVeryBack = Instance.new("Frame")
-    SelectedTabVeryBack.Name = "SelectedTabVeryBack"
-    SelectedTabVeryBack.Parent = VeryBackFrameTabListTabs
-    SelectedTabVeryBack.BackgroundColor3 = Color3.fromRGB(62, 62, 62)
-    SelectedTabVeryBack.Position = UDim2.new(1.1, 0, 0.0627, 0)
-    SelectedTabVeryBack.Size = UDim2.new(0, 391, 0, 364)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainWindow"
+mainFrame.Size = UDim2.new(0, 450, 0, 300)
+mainFrame.Position = UDim2.new(0.3, math.random(-100,100), 0.3, math.random(-100,100))
+mainFrame.BackgroundColor3 = Color3.fromHSV(math.random(), 1, 1)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = Gui
 
-    local SelectedTabSection1 = Instance.new("Frame")
-    SelectedTabSection1.Name = "SelectedTabSection1"
-    SelectedTabSection1.Parent = SelectedTabVeryBack
-    SelectedTabSection1.BackgroundColor3 = Color3.fromRGB(93, 93, 93)
-    SelectedTabSection1.Position = UDim2.new(0.0408, 0, 0.0414, 0)
-    SelectedTabSection1.Size = UDim2.new(0, 173, 0, 169)
+-- Neon glow effect
+local UIStroke = Instance.new("UIStroke", mainFrame)
+UIStroke.Thickness = 3
+UIStroke.Color = Color3.fromRGB(255, 20, 147)
 
-    local SelectedTabHeader = Instance.new("Frame")
-    SelectedTabHeader.Name = "SelectedTabHeader"
-    SelectedTabHeader.Parent = SelectedTabVeryBack
-    SelectedTabHeader.BackgroundColor3 = Color3.fromRGB(93, 93, 93)
-    SelectedTabHeader.Position = UDim2.new(0, 0, -0.0658, 0)
-    SelectedTabHeader.Size = UDim2.new(0, 391, 0, 24)
+-- Random drifting
+local driftSpeed = Vector2.new(math.random() - 0.5, math.random() - 0.5) * 5
+RunService.Heartbeat:Connect(function(dt)
+    local pos = mainFrame.Position
+    local newX = pos.X.Scale + driftSpeed.X * dt * 0.01
+    local newY = pos.Y.Scale + driftSpeed.Y * dt * 0.01
+    mainFrame.Position = UDim2.new(newX % 1, pos.X.Offset, newY % 1, pos.Y.Offset)
+end)
 
-    local TabName = Instance.new("TextLabel")
-    TabName.Name = "TabName"
-    TabName.Parent = SelectedTabHeader
-    TabName.BackgroundTransparency = 1
-    TabName.Position = UDim2.new(0, 0, -0.028, 0)
-    TabName.Size = UDim2.new(0, 109, 0, 23)
-    TabName.Font = Enum.Font.SourceSansBold
-    TabName.Text = "SelectedTabName"
-    TabName.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabName.TextSize = 10
+-- Tab shuffle
+local tabs = {"AimBot", "ESP", "AutoFarm", "Noclip", "WeirdStuff"}
+local tabButtons = {}
 
-    local TabDetails = Instance.new("TextLabel")
-    TabDetails.Name = "TabDetails"
-    TabDetails.Parent = SelectedTabHeader
-    TabDetails.BackgroundTransparency = 1
-    TabDetails.Position = UDim2.new(0.426, 0, 0.041, 0)
-    TabDetails.Size = UDim2.new(0, 215, 0, 23)
-    TabDetails.Font = Enum.Font.SourceSansBold
-    TabDetails.Text = "Tab Details"
-    TabDetails.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabDetails.TextSize = 10
+local tabFrame = Instance.new("Frame")
+tabFrame.Size = UDim2.new(1, 0, 0, 40)
+tabFrame.Position = UDim2.new(0,0,0,0)
+tabFrame.BackgroundTransparency = 1
+tabFrame.Parent = mainFrame
 
-    local MainTabListHeader = Instance.new("Frame")
-    MainTabListHeader.Name = "MainTabListHeader"
-    MainTabListHeader.Parent = VeryBackFrameTabListTabs
-    MainTabListHeader.BackgroundColor3 = Color3.fromRGB(62, 62, 62)
-    MainTabListHeader.Position = UDim2.new(0, 0, -0.1015, 0)
-    MainTabListHeader.Size = UDim2.new(0, 145, 0, 23)
-
-    local MinimizeButton = Instance.new("TextButton")
-    MinimizeButton.Name = "MinimizeButton"
-    MinimizeButton.Parent = MainTabListHeader
-    MinimizeButton.BackgroundTransparency = 1
-    MinimizeButton.Position = UDim2.new(0.752, 0, 0, 0)
-    MinimizeButton.Size = UDim2.new(0, 16, 0, 22)
-    MinimizeButton.Font = Enum.Font.SourceSansBold
-    MinimizeButton.Text = "-"
-    MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MinimizeButton.TextSize = 16
-
-    local CloseButton = Instance.new("TextButton")
-    CloseButton.Name = "CloseButton"
-    CloseButton.Parent = MainTabListHeader
-    CloseButton.BackgroundTransparency = 1
-    CloseButton.Position = UDim2.new(0.872, 0, 0, 0)
-    CloseButton.Size = UDim2.new(0, 16, 0, 22)
-    CloseButton.Font = Enum.Font.SourceSansBold
-    CloseButton.Text = "x"
-    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CloseButton.TextSize = 16
-
-    local MainTabListName = Instance.new("TextLabel")
-    MainTabListName.Name = "MainTabListName"
-    MainTabListName.Parent = MainTabListHeader
-    MainTabListName.BackgroundTransparency = 1
-    MainTabListName.Position = UDim2.new(0, 0, -0.028, 0)
-    MainTabListName.Size = UDim2.new(0, 109, 0, 23)
-    MainTabListName.Font = Enum.Font.SourceSansBold
-    MainTabListName.Text = "Free \"Experiments\" Hub"
-    MainTabListName.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MainTabListName.TextSize = 10
-
-    local Tab1OpenClose = Instance.new("TextButton")
-    Tab1OpenClose.Name = "Tab1OpenClose"
-    Tab1OpenClose.Parent = VeryBackFrameTabListTabs
-    Tab1OpenClose.BackgroundColor3 = Color3.fromRGB(62, 62, 62)
-    Tab1OpenClose.Position = UDim2.new(0.0539, 0, 0.1269, 0)
-    Tab1OpenClose.Size = UDim2.new(0, 63, 0, 19)
-    Tab1OpenClose.Font = Enum.Font.SourceSansBold
-    Tab1OpenClose.Text = "TabName"
-    Tab1OpenClose.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Tab1OpenClose.TextSize = 14
-
-    return GUITOLUA
+-- Shuffles tab names
+local function shuffle(t)
+    local n = #t
+    for i = n, 2, -1 do
+        local j = math.random(i)
+        t[i], t[j] = t[j], t[i]
+    end
 end
 
-return GUI_Library
+shuffle(tabs)
+
+-- Create buttons
+for i, tabName in ipairs(tabs) do
+    local btn = Instance.new("TextButton")
+    btn.Text = tabName
+    btn.Size = UDim2.new(0, 80, 1, 0)
+    btn.Position = UDim2.new(0, (i-1)*90, 0, 0)
+    btn.BackgroundColor3 = Color3.fromHSV(math.random(), 0.8, 1)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Parent = tabFrame
+
+    -- Random button jitter
+    RunService.Heartbeat:Connect(function()
+        btn.Position = UDim2.new(btn.Position.X.Scale, btn.Position.X.Offset + math.sin(tick()*math.random())*2, 0, btn.Position.Y.Offset + math.cos(tick()*math.random())*2)
+    end)
+
+    tabButtons[tabName] = btn
+end
+
+-- Container for cheats
+local cheatContainer = Instance.new("Frame")
+cheatContainer.Size = UDim2.new(1, 0, 1, -40)
+cheatContainer.Position = UDim2.new(0, 0, 0, 40)
+cheatContainer.BackgroundTransparency = 0.5
+cheatContainer.BackgroundColor3 = Color3.fromRGB(10,10,10)
+cheatContainer.Parent = mainFrame
+
+-- Obscure toggle function
+local function weirdToggle(cheatName)
+    print("Toggling cheat: " .. cheatName)
+    -- Randomly enable/disable other toggles
+    for name, btn in pairs(tabButtons) do
+        if name ~= cheatName then
+            btn.BackgroundColor3 = Color3.fromHSV(math.random(), 1, 1)
+        end
+    end
+end
+
+-- Connect buttons to toggles
+for name, btn in pairs(tabButtons) do
+    btn.MouseButton1Click:Connect(function()
+        weirdToggle(name)
+    end)
+end
+
+-- Public API to load cheats
+function InsaneGUI.LoadCheat(name, func)
+    local cheatLabel = Instance.new("TextLabel")
+    cheatLabel.Text = name .. " [INSANE MODE]"
+    cheatLabel.Size = UDim2.new(0.9, 0, 0, 30)
+    cheatLabel.Position = UDim2.new(0.05, 0, 0, (#cheatContainer:GetChildren() - 1) * 35)
+    cheatLabel.TextColor3 = Color3.fromHSV(math.random(), 1, 1)
+    cheatLabel.BackgroundTransparency = 1
+    cheatLabel.Parent = cheatContainer
+
+    local cheatToggle = Instance.new("TextButton")
+    cheatToggle.Text = "Enable"
+    cheatToggle.Size = UDim2.new(0.2, 0, 0, 30)
+    cheatToggle.Position = UDim2.new(0.8, 0, 0, (#cheatContainer:GetChildren() - 1) * 35)
+    cheatToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    cheatToggle.Parent = cheatContainer
+
+    local enabled = false
+    cheatToggle.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        cheatToggle.Text = enabled and "Disable" or "Enable"
+        cheatToggle.BackgroundColor3 = enabled and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+        if enabled then
+            func(true)
+        else
+            func(false)
+        end
+    end)
+end
+
+return InsaneGUI
